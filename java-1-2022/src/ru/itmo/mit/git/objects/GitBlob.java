@@ -11,4 +11,11 @@ public class GitBlob extends GitObject {
         countHash(typeObject.getType() + nameBlob + contentBlob);
     }
 
+    public String getContentBlob() {
+        return contentBlob;
+    }
+
+    public String getNameBlob() {
+        return nameBlob;
+    }
 }

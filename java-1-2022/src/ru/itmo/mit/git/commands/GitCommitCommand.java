@@ -17,7 +17,7 @@ public class GitCommitCommand extends GitAbstractCommand{
     }
 
     @Override
-    public void prettyPrint() {
+    public void prettyPrint(List<String> args) {
 
     }
 

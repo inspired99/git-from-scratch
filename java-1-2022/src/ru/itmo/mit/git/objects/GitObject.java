@@ -3,7 +3,7 @@ package ru.itmo.mit.git.objects;
 import org.apache.commons.codec.digest.DigestUtils;
 
 /*
-Абстрактный класс для объектов гита
+Абстрактный класс для объектов гита: Tree, Commit, Blob, Branch
  */
 
 public abstract class GitObject {

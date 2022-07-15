@@ -16,19 +16,19 @@ public class GitCliImpl implements GitCli {
 
     @Override
     public void runCommand(@NotNull String command, @NotNull List<@NotNull String> arguments) throws GitException {
-        GitAbstractCommand gitAbstractCommand = gitManager.getGitCommandsFactory().getCommand(command);
+        GitAbstractCommand gitAbstractCommand = gitManager.getGitCommandsManager().getCommand(command);
         gitAbstractCommand.checkArgs(arguments);
         gitAbstractCommand.execute(arguments);
-        gitAbstractCommand.prettyPrint();
+        gitAbstractCommand.prettyPrint(arguments);
     }
 
     @Override
     public void setOutputStream(@NotNull PrintStream outputStream) {
-
+        gitManager.setOutputStream(outputStream);
     }
 
     @Override
     public @NotNull String getRelativeRevisionFromHead(int n) throws GitException {
-        return null;
+        return gitManager.getRevisionFromHead(n);
     }
 }

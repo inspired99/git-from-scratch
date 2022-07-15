@@ -8,4 +8,8 @@ public class GitBranch extends GitObject{
         this.branchName = branchName;
         this.hashObject = latestCommitHash;
     }
+
+    public String getBranchName() {
+        return branchName;
+    }
 }

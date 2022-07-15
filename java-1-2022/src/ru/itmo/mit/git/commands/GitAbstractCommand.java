@@ -17,9 +17,9 @@ public abstract class GitAbstractCommand {
         this.gitManager = gitManager;
     }
 
-    public abstract void execute(@NotNull List<String> args);
+    public abstract void execute(@NotNull List<String> args) throws GitException;
 
-    public abstract void prettyPrint();
+    public abstract void prettyPrint(List<String> args);
 
     public void checkArgs(@NotNull List<String> args) throws GitException {}
 }

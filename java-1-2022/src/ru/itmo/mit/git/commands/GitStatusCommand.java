@@ -17,7 +17,7 @@ public class GitStatusCommand extends GitAbstractCommand{
     }
 
     @Override
-    public void prettyPrint() {
+    public void prettyPrint(List<String> args) {
 
     }
 
