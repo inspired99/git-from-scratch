@@ -5,12 +5,12 @@ import org.jetbrains.annotations.NotNull;
 import java.text.DateFormat;
 import java.util.Calendar;
 
-public class GitCommit extends GitObject{
+public class GitCommit extends GitObject {
     private final String messageCommit;
-    private final String dateCommit;
     private final String parentCommitHash;
     private final String rootTreeHash;
     private final String authorCommit;
+    private String dateCommit;
 
     public GitCommit(String authorCommit, String messageCommit, String parentCommitHash, String rootTreeHash) {
         super(GitObjectType.COMMIT);
@@ -19,7 +19,7 @@ public class GitCommit extends GitObject{
         this.dateCommit = currentDate();
         this.parentCommitHash = parentCommitHash;
         this.rootTreeHash = rootTreeHash;
-        countHash(typeObject.getType() + messageCommit + authorCommit + dateCommit + rootTreeHash);
+        updateHash();
     }
 
     private @NotNull String currentDate() {
@@ -32,6 +32,14 @@ public class GitCommit extends GitObject{
 
     public String getDateCommit() {
         return dateCommit;
+    }
+
+    public void setDateCommit(String dateCommit) {
+        this.dateCommit = dateCommit;
+    }
+
+    public void updateHash() {
+        countHash(typeObject.getType() + messageCommit + authorCommit + dateCommit + rootTreeHash);
     }
 
     public String getParentCommitHash() {

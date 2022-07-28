@@ -12,4 +12,8 @@ public class GitBranch extends GitObject{
     public String getBranchName() {
         return branchName;
     }
+
+    public void setHashObject(String hash) {
+        this.hashObject = hash;
+    }
 }

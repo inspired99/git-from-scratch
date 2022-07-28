@@ -1,10 +1,12 @@
 package ru.itmo.mit.git.objects;
 
+import ru.itmo.mit.git.GitConstants;
+
 public enum GitObjectType {
-    BLOB("blob"),
-    COMMIT("commit"),
-    TREE("tree"),
-    BRANCH("branch");
+    BLOB(GitConstants.BLOB),
+    COMMIT(GitConstants.COMMIT),
+    TREE(GitConstants.TREE),
+    BRANCH(GitConstants.BRANCH);
 
     private final String type;
 

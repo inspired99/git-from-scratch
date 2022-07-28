@@ -4,18 +4,18 @@ import org.jetbrains.annotations.NotNull;
 import org.json.simple.JSONObject;
 import ru.itmo.mit.git.GitConstants;
 import ru.itmo.mit.git.GitException;
-import ru.itmo.mit.git.objects.GitBlob;
-import ru.itmo.mit.git.objects.GitBranch;
-import ru.itmo.mit.git.objects.GitCommit;
-import ru.itmo.mit.git.objects.GitTree;
+import ru.itmo.mit.git.objects.*;
 import ru.itmo.mit.git.utils.FileManager;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /*
-Класс для низкоуровневой работы с файлами гита - чтение и запись, хранение путей до директорий
+Класс для более низкоуровневой работы с файлами гита как объектами Blob, Tree, Commit, Branch,
+а также для хранения гит директорий
  */
 
 public class GitPathsHolder {
@@ -26,8 +26,8 @@ public class GitPathsHolder {
     private final String pathToHead;
     private final String pathToBranches;
 
-    public GitPathsHolder(String workingDir) {
-        this.workingDir = workingDir;
+    public GitPathsHolder(@NotNull GitManager gitManager) {
+        this.workingDir = gitManager.getWorkingDir();
         this.mainDir = workingDir + File.separator + "." + GitConstants.GIT;
         this.pathToHead = mainDir + File.separator + GitConstants.HEAD;
         this.pathToObjects = mainDir + File.separator + GitConstants.OBJECTS;
@@ -47,26 +47,8 @@ public class GitPathsHolder {
         return Path.of(workingDir).resolve(path);
     }
 
-    public boolean checkFileInGitDir(@NotNull Path path) {
-        return FileManager.checkFileExists(Path.of(workingDir).resolve(path));
-    }
-
-    public void updateHeadFile(@NotNull String content) throws GitException {
-        FileManager.writeFileByPath(Path.of(pathToHead), content);
-    }
-
-    public void writeIndex(@NotNull GitIndex gitIndex) throws GitException {
-        GitIndexType added = gitIndex.getGitIndexAdded();
-        GitIndexType removed = gitIndex.getGitIndexRemoved();
-        GitIndexType untracked = gitIndex.getGitIndexUntracked();
-        GitIndexType modified = gitIndex.getGitIndexModified();
-        modified.addFile("1", "2");
-        HashMap<String, String> jsonMap = new HashMap<>();
-        jsonMap.put(added.getType(), added.getFiles().entrySet().toString());
-        jsonMap.put(removed.getType(), removed.getFiles().toString());
-        jsonMap.put(untracked.getType(), untracked.getFiles().toString());
-        jsonMap.put(modified.getType(), modified.getFiles().toString());
-        FileManager.writeFileByPath(Path.of(pathToIndex), jsonMap.toString());
+    public boolean checkBranchExists(@NotNull String name) {
+        return FileManager.checkFileExists(Path.of(pathToBranches).resolve(Path.of(name)));
     }
 
     private @NotNull HashMap<String, String> parseTreeContent(@NotNull String content) {
@@ -76,64 +58,65 @@ public class GitPathsHolder {
         for (var obj : objects) {
             String mapKeyValueSeparator = "=";
             String[] innerObj = obj.split(mapKeyValueSeparator);
-            res.put(innerObj[0], innerObj[1]);
+            if (innerObj.length > 1) {
+                res.put(innerObj[0].strip(), innerObj[1]);
+            }
         }
         return res;
     }
 
-    public GitBlob getBlobByPath(@NotNull Path path) throws GitException {
-        String inside = FileManager.readFromFile(path);
-        return new GitBlob(inside, path.getFileName().toString());
+    public List<String> readAllBranches() {
+        return FileManager.listFilesByPath(Path.of(pathToBranches))
+                .stream()
+                .map(File::getName)
+                .collect(Collectors.toList());
+    }
+
+    public void readIndex(@NotNull GitIndex gitIndex, @NotNull String content) {
+        if (content.length() <= 1) {
+            return;
+        }
+        String[] split = content.split(" ");
+        if (split.length > 1) {
+            gitIndex.getGitIndexTracked().put(split[0], split[1]);
+        }
+    }
+
+    public GitBlob readBlob(@NotNull String hash) throws GitException {
+        JSONObject json = FileManager.readFromJsonFile(Path.of(getPathByHash(hash)));
+        org.json.JSONObject jsonObject = new org.json.JSONObject(json);
+        if (!(jsonObject.has(GitConstants.HASH) && jsonObject.has(GitConstants.TYPE)
+                && jsonObject.has(GitConstants.NAME) && jsonObject.has(GitConstants.CONTENT))) {
+            throw new GitException("Could not read blob ");
+        }
+        return new GitBlob(jsonObject.getString(GitConstants.CONTENT), jsonObject.getString(GitConstants.NAME));
     }
 
     public GitTree getTreeByPath(@NotNull Path pathTree) throws GitException {
         JSONObject json = FileManager.readFromJsonFile(pathTree);
         org.json.JSONObject jsonObject = new org.json.JSONObject(json);
         if (!(jsonObject.has(GitConstants.HASH) && jsonObject.has(GitConstants.PATH) &&
-                jsonObject.has(GitConstants.BLOB) && jsonObject.has(GitConstants.TREE))) {
+                jsonObject.has(GitConstants.BLOBS) &&
+                jsonObject.has(GitConstants.TYPE))) {
             throw new GitException("Could not read tree from file: " + pathTree);
         }
         String path = jsonObject.getString(GitConstants.PATH);
         String blobs = jsonObject.getString(GitConstants.BLOBS);
-        String trees = jsonObject.getString(GitConstants.TREES);
         blobs = blobs.substring(1, blobs.length() - 1);
-        trees = trees.substring(1, trees.length() - 1);
-        return new GitTree(path, parseTreeContent(blobs), parseTreeContent(trees));
+        return new GitTree(path, parseTreeContent(blobs));
     }
 
-    private @NotNull Path getPathToObjFromHash(@NotNull String hash) {
-        return Path.of(pathToObjects).resolve(hash.substring(0, 2)).resolve(hash.substring(2));
+    public @NotNull String getPathByHash(@NotNull String hash) {
+        return Path.of(pathToObjects).resolve(hash.substring(0, 2)).resolve(hash.substring(2)).toString();
     }
 
-    public GitTree constructTreesByPath(@NotNull GitTree gitTree, @NotNull String pathTree) throws GitException {
-        String[] pathsSeparated = pathTree.split(File.separator);
-        StringBuilder curPath = new StringBuilder();
-        if (pathsSeparated.length > 2) {
-            curPath.append(pathsSeparated[0]);
-            curPath.append(File.separator);
-            String realPath = pathTree.substring(curPath.length());
-            GitTree anotherTree = new GitTree();
-            GitTree newTree;
-            if (!gitTree.getTreesHashes().containsKey(pathsSeparated[0])) {
-                newTree = constructTreesByPath(anotherTree, realPath);
-                newTree.setPath(pathsSeparated[0]);
-                gitTree.getTreesHashes().put(newTree.getPath(), newTree.getHashObject());
-            } else {
-                String subTreeHash = gitTree.getTreesHashes().get(pathTree);
-                anotherTree = getTreeByPath(getPathToObjFromHash(subTreeHash));
-                newTree = constructTreesByPath(anotherTree, realPath);
-                gitTree.getTreesHashes().remove(anotherTree.getPath());
-                gitTree.getTreesHashes().put(newTree.getPath(), newTree.getHashObject());
-            }
-        } else {
-            GitBlob newBlob = getBlobByPath(Path.of(pathTree));
-            writeBlob(newBlob);
-            gitTree.getBlobsHashes().remove(newBlob.getNameBlob());
-            gitTree.getBlobsHashes().put(newBlob.getNameBlob(), newBlob.getHashObject());
-        }
-        gitTree.updateTreeHash();
-        writeTree(gitTree);
-        return gitTree;
+    public GitBranch getBranchByName(@NotNull String name) throws GitException {
+        String hash = FileManager.readFromFile(Path.of(pathToBranches).resolve(Path.of(name)));
+        return new GitBranch(name, hash);
+    }
+
+    public @NotNull Path pathToBranchByName(@NotNull String name) {
+        return Path.of(pathToBranches).resolve(name);
     }
 
     public void writeTree(@NotNull GitTree gitTree) throws GitException {
@@ -144,8 +127,7 @@ public class GitPathsHolder {
         jsonMap.put(GitConstants.HASH, gitTree.getHashObject());
         jsonMap.put(GitConstants.PATH, gitTree.getPath());
         jsonMap.put(GitConstants.BLOBS, gitTree.getBlobsHashes().toString());
-        jsonMap.put(GitConstants.TREES, gitTree.getTreesHashes().toString());
-        FileManager.writeToJsonFile(finalPath, new JSONObject(jsonMap));
+        FileManager.writeFileByPath(finalPath, new org.json.JSONObject(jsonMap).toString());
     }
 
     private @NotNull Path preparePath(@NotNull String hash) throws GitException {
@@ -154,11 +136,30 @@ public class GitPathsHolder {
         if (!FileManager.checkFileExists(pathToObj)) {
             FileManager.createDirByPath(pathToObj);
         }
-        Path finalPath = pathToObj.resolve(Path.of(hash.substring(2)));
+        Path finalPath = Path.of(getPathByHash(hash));
         if (FileManager.checkFileExists(finalPath)) {
             FileManager.deleteFileByPath(finalPath);
         }
         return finalPath;
+    }
+
+    public void traverseBlobsToMap(@NotNull HashMap<String, String> hashes, @NotNull String path) throws GitException {
+        List<File> filesInDir = FileManager.listFilesByPath(Path.of(path))
+                .stream().filter(x -> !x.getAbsolutePath().startsWith(mainDir)).collect(Collectors.toList());
+        List<File> dirs = FileManager.listDirsByPath(Path.of(path))
+                .stream().filter(x -> !x.getAbsolutePath().startsWith(mainDir)).collect(Collectors.toList());
+        if (!filesInDir.isEmpty()) {
+            for (var fileInDir : filesInDir) {
+                GitBlob newBlob = new GitBlob(FileManager.readFromFile(Path.of(fileInDir.getAbsolutePath())),
+                        fileInDir.getName());
+                hashes.put(fileInDir.getAbsolutePath(), newBlob.getHashObject());
+            }
+        }
+        if (dirs.size() > 1) {
+            for (int i = 1; i < dirs.size(); ++i) {
+                traverseBlobsToMap(hashes, dirs.get(i).getAbsolutePath());
+            }
+        }
     }
 
     public void writeCommit(@NotNull GitCommit commit) throws GitException {
@@ -172,6 +173,26 @@ public class GitPathsHolder {
         jsonMap.put(GitConstants.PARENT_COMMIT, commit.getParentCommitHash());
         jsonMap.put(GitConstants.ROOT_TREE, commit.getRootTreeHash());
         FileManager.writeToJsonFile(finalPath, new JSONObject(jsonMap));
+    }
+
+    public GitCommit getCommitByPath(@NotNull Path path) throws GitException {
+        JSONObject json = FileManager.readFromJsonFile(path);
+        org.json.JSONObject jsonObject = new org.json.JSONObject(json);
+        if (!(jsonObject.has(GitConstants.HASH) && jsonObject.has(GitConstants.TYPE) &&
+                jsonObject.has(GitConstants.COMMIT_MESSAGE) && jsonObject.has(GitConstants.COMMIT_AUTHOR) &&
+                jsonObject.has(GitConstants.DATE) && jsonObject.has(GitConstants.PARENT_COMMIT) &&
+                jsonObject.has(GitConstants.ROOT_TREE))) {
+            throw new GitException("Could not read tree from file: " + path);
+        }
+        String message = jsonObject.getString(GitConstants.COMMIT_MESSAGE);
+        String author = jsonObject.getString(GitConstants.COMMIT_AUTHOR);
+        String date = jsonObject.getString(GitConstants.DATE);
+        String parentCommit = jsonObject.getString(GitConstants.PARENT_COMMIT);
+        String rootTree = jsonObject.getString(GitConstants.ROOT_TREE);
+        GitCommit commit = new GitCommit(author, message, parentCommit, rootTree);
+        commit.setDateCommit(date);
+        commit.updateHash();
+        return commit;
     }
 
     public void writeBranch(@NotNull GitBranch branch) throws GitException {
@@ -200,19 +221,11 @@ public class GitPathsHolder {
         return mainDir;
     }
 
-    public String getPathToObjects() {
-        return pathToObjects;
-    }
-
     public String getPathToIndex() {
         return pathToIndex;
     }
 
     public String getPathToHead() {
         return pathToHead;
-    }
-
-    public String getPathToBranches() {
-        return pathToBranches;
     }
 }

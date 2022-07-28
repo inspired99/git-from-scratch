@@ -7,28 +7,21 @@ import ru.itmo.mit.git.utils.CommandMessages;
 
 import java.util.List;
 
-public class GitRmCommand extends GitAbstractCommand{
-
-    public GitRmCommand(GitManager gitManager) {
+public class GitBranchRemoveCommand extends GitAbstractCommand{
+    public GitBranchRemoveCommand(GitManager gitManager) {
         super(gitManager);
     }
 
     @Override
     public void execute(@NotNull List<String> args) throws GitException {
         gitManager.loadGitState();
-        for (var file : args) {
-            gitManager.removeFromIndex(file);
-        }
+        gitManager.removeBranchFromGit(args.get(0));
         gitManager.saveGitState(gitManager.getHead());
     }
 
     @Override
     public void prettyPrint(@NotNull List<String> args) {
-        StringBuilder message = new StringBuilder(CommandMessages.REMOVE_MESSAGE.getMessage());
-        for (var file : args) {
-            message.append("\n").append(file);
-        }
-        gitManager.getPrintStream().println(message);
+        gitManager.getPrintStream().println(CommandMessages.BRANCH_REMOVE_MESSAGE.getMessage() + args.get(0));
     }
 
     @Override
@@ -37,5 +30,4 @@ public class GitRmCommand extends GitAbstractCommand{
             throw new GitException("Wrong number of arguments for rm command ");
         }
     }
-
 }

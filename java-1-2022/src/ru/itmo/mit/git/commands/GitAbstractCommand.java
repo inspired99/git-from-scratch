@@ -7,7 +7,7 @@ import ru.itmo.mit.git.body.GitManager;
 import java.util.List;
 
 /*
-Абстрактный класс для команды
+Абстрактный класс для git command
  */
 
 public abstract class GitAbstractCommand {

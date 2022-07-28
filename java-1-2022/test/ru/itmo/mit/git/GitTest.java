@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 public class GitTest extends AbstractGitTest {
     @Override
     protected GitCli createCli(String workingDir) {
-        throw new UnsupportedOperationException();
+        return new GitCliImpl(workingDir);
     }
 
     @Override

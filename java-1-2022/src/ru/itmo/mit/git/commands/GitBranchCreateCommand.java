@@ -7,35 +7,27 @@ import ru.itmo.mit.git.utils.CommandMessages;
 
 import java.util.List;
 
-public class GitRmCommand extends GitAbstractCommand{
-
-    public GitRmCommand(GitManager gitManager) {
+public class GitBranchCreateCommand extends GitAbstractCommand {
+    public GitBranchCreateCommand(GitManager gitManager) {
         super(gitManager);
     }
 
     @Override
     public void execute(@NotNull List<String> args) throws GitException {
         gitManager.loadGitState();
-        for (var file : args) {
-            gitManager.removeFromIndex(file);
-        }
+        gitManager.addBranchToGit(args.get(0));
         gitManager.saveGitState(gitManager.getHead());
     }
 
     @Override
     public void prettyPrint(@NotNull List<String> args) {
-        StringBuilder message = new StringBuilder(CommandMessages.REMOVE_MESSAGE.getMessage());
-        for (var file : args) {
-            message.append("\n").append(file);
-        }
-        gitManager.getPrintStream().println(message);
+        gitManager.getPrintStream().println(CommandMessages.BRANCH_CREATE_MESSAGE.getMessage() + args.get(0));
     }
 
     @Override
     public void checkArgs(@NotNull List<String> args) throws GitException {
-        if (args.isEmpty()) {
-            throw new GitException("Wrong number of arguments for rm command ");
+        if (args.size() != 1) {
+            throw new GitException("Wrong number of arguments for branch-create command");
         }
     }
-
 }
