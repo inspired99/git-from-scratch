@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ParserArgs {
-
     @Parameter(
             names = "git",
             description = "Key word",
@@ -22,5 +21,4 @@ public class ParserArgs {
     public List<String> getGitArgs() {
         return gitArgs;
     }
-
 }

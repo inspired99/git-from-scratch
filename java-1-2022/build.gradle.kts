@@ -1,5 +1,6 @@
 plugins {
     java
+    application
 }
 
 group = "org.itmo.java"
@@ -21,6 +22,10 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
+application {
+    mainClass.set("ru.itmo.mit.git.Main")
+}
+
 sourceSets {
     main {
         java.setSrcDirs(listOf("src"))
@@ -30,6 +35,10 @@ sourceSets {
         java.setSrcDirs(listOf("test"))
         resources.setSrcDirs(listOf("testResources"))
     }
+}
+
+tasks.compileJava {
+    options.release.set(11)
 }
 
 tasks.test {

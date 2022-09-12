@@ -12,29 +12,28 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /*
-Класс для чтения и записи JSON представления гит-объектов
+Utility класс для работы с JSON-файлами
  */
 
 public class JsonFileManager {
-
-    public static void writeToFile(@NotNull Path path, @NotNull JSONObject obj) throws GitException {
+    public static void writeToJsonFile(@NotNull Path path, @NotNull JSONObject obj) throws GitException {
         try (FileWriter fw = new FileWriter(path.toString())) {
-            fw.write(obj.toJSONString());
+            fw.write(obj.toString());
             fw.flush();
         } catch (IOException e) {
-            throw new GitException("Could not write to file: " + path, e);
+            throw new GitException("Could not write to file: ", e);
         }
     }
 
-    public static JSONObject readFromFile(@NotNull Path path) throws GitException {
+    public static JSONObject readFromJsonFile(@NotNull Path path) throws GitException {
         JSONParser jsonParser = new JSONParser();
         JSONObject json;
-        try (FileReader fr = new FileReader(path.toString())) {
+        try (FileReader fr = new FileReader(path.toString().strip())) {
             json = (JSONObject) jsonParser.parse(fr);
         } catch (IOException e) {
-            throw new GitException("Could not read from file: " + path, e);
+            throw new GitException("Could not read from file: ", e);
         } catch (ParseException e) {
-            throw new GitException("Could not parse from JSON file: " + path, e);
+            throw new GitException("Could not parse from JSON file: ", e);
         }
         return json;
     }

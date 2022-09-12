@@ -31,12 +31,15 @@ public final class GitConstants {
     public static final @NotNull String NAME = "name";
     public static final @NotNull String CONTENT = "content";
     public static final @NotNull String PATH = "path";
-
+    public static final @NotNull String BRANCH = "branch";
     public static final @NotNull String HEAD = "HEAD";
     public static final @NotNull String GIT = "git";
     public static final @NotNull String BRANCHES = "branches";
     public static final @NotNull String INDEX = "index";
     public static final @NotNull String OBJECTS = "objects";
     public static final @NotNull String BLOBS = "blobs";
-    public static final @NotNull String TREES = "trees";
+    public static final @NotNull String ADDED = "added";
+    public static final @NotNull String MODIFIED = "modified";
+    public static final @NotNull String REMOVED = "removed";
+    public static final @NotNull String CHECKOUT_FILES_DASH = "--";
 }
