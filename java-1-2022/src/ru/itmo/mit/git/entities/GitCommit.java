@@ -1,0 +1,56 @@
+package ru.itmo.mit.git.entities;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.text.DateFormat;
+import java.util.Calendar;
+
+public class GitCommit extends GitEntity {
+    private final String messageCommit;
+    private final String parentCommitHash;
+    private final String rootTreeHash;
+    private final String authorCommit;
+    private String dateCommit;
+
+    public GitCommit(String authorCommit, String messageCommit, String parentCommitHash, String rootTreeHash) {
+        super(GitEntityType.COMMIT);
+        this.authorCommit = authorCommit;
+        this.messageCommit = messageCommit;
+        this.dateCommit = currentDate();
+        this.parentCommitHash = parentCommitHash;
+        this.rootTreeHash = rootTreeHash;
+        updateHash();
+    }
+
+    private @NotNull String currentDate() {
+        return DateFormat.getDateTimeInstance().format(Calendar.getInstance().getTime());
+    }
+
+    public String getMessageCommit() {
+        return messageCommit;
+    }
+
+    public String getDateCommit() {
+        return dateCommit;
+    }
+
+    public void setDateCommit(String dateCommit) {
+        this.dateCommit = dateCommit;
+    }
+
+    public void updateHash() {
+        countHash(typeEntity.getType() + messageCommit + authorCommit + dateCommit + rootTreeHash);
+    }
+
+    public String getParentCommitHash() {
+        return parentCommitHash;
+    }
+
+    public String getRootTreeHash() {
+        return rootTreeHash;
+    }
+
+    public String getAuthorCommit() {
+        return authorCommit;
+    }
+}
